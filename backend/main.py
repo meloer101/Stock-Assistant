@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 import uuid
-from typing import Any
+from pathlib import Path
+from typing import Any, Optional
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from google.adk.agents.run_config import RunConfig, StreamingMode
 from google.adk.runners import Runner
-from google.adk.sessions import InMemorySessionService
+from google.adk.sessions import DatabaseSessionService
 from google.genai.types import Content, Part
 from pydantic import BaseModel
 
@@ -33,47 +33,145 @@ app.add_middleware(
 )
 
 APP_NAME = "vine_research"
-session_service = InMemorySessionService()
+
+_db_path = Path(__file__).resolve().parent / "sessions.db"
+DB_URL = f"sqlite+aiosqlite:///{_db_path}"
+session_service = DatabaseSessionService(db_url=DB_URL)
+
 runner = Runner(
     agent=root_agent,
     app_name=APP_NAME,
     session_service=session_service,
 )
 
-_user_sessions: dict[str, dict[str, str]] = {}
+
+# ── Helpers ──────────────────────────────────────────────────────────
 
 
-def _get_or_create_session_id(user_id: str) -> str:
-    if user_id not in _user_sessions:
-        _user_sessions[user_id] = {}
-    if "session_id" not in _user_sessions[user_id]:
-        _user_sessions[user_id]["session_id"] = str(uuid.uuid4())
-    return _user_sessions[user_id]["session_id"]
+def _debug_log(run_id: str, hypothesis_id: str, location: str, message: str, data: dict):
+    payload = {
+        "sessionId": "954828",
+        "runId": run_id,
+        "hypothesisId": hypothesis_id,
+        "location": location,
+        "message": message,
+        "data": data,
+        "timestamp": int(__import__("time").time() * 1000),
+    }
+    with open("/Users/m/Desktop/Vine-MVP/.cursor/debug-954828.log", "a", encoding="utf-8") as f:
+        f.write(json.dumps(payload, ensure_ascii=False) + "\n")
+
+
+def _greenlet_available() -> bool:
+    try:
+        import greenlet  # noqa: F401
+
+        return True
+    except Exception:
+        return False
+
+
+def _sqlalchemy_greenlet_state() -> dict[str, Any]:
+    try:
+        import sqlalchemy.util.concurrency as concurrency
+
+        return {
+            "have_greenlet": getattr(concurrency, "have_greenlet", None),
+            "greenlet_spawn_module": getattr(concurrency, "__file__", None),
+        }
+    except Exception as exc:
+        return {"error": repr(exc)}
+
+
+def _extract_messages_from_session(session) -> list[dict]:
+    """Convert ADK Session events into a flat list of {role, content, author}."""
+    messages: list[dict] = []
+    for ev in session.events:
+        if not ev.content or not ev.content.parts:
+            continue
+        text_parts = [
+            p.text for p in ev.content.parts if hasattr(p, "text") and p.text
+        ]
+        if not text_parts:
+            continue
+        text = "\n".join(text_parts)
+        role = "user" if ev.author == "user" else "assistant"
+        msg: dict[str, Any] = {"role": role, "content": text}
+        if role == "assistant":
+            msg["author"] = ev.author
+        messages.append(msg)
+    return messages
+
+
+def _session_preview(session) -> str:
+    """Read the preview stored in session state (set on first message)."""
+    return session.state.get("_preview", "")
 
 
 # ── Chat endpoint (SSE) ─────────────────────────────────────────────
 
+
 class ChatRequest(BaseModel):
     message: str
     user_id: str = "default_user"
+    session_id: Optional[str] = None
 
 
 async def _run_agent_stream(request: ChatRequest):
     """Run the agent and yield SSE events."""
     user_id = request.user_id
-    session_id = _get_or_create_session_id(user_id)
+    session_id = request.session_id
 
-    existing = await session_service.get_session(
-        app_name=APP_NAME,
-        user_id=user_id,
-        session_id=session_id,
+    # #region agent log
+    _debug_log(
+        "pre-fix",
+        "H1",
+        "backend/main.py:109",
+        "chat stream entered",
+        {
+            "has_session_id": bool(session_id),
+            "greenlet_available": _greenlet_available(),
+            "db_url": DB_URL,
+        },
     )
-    if existing is None:
-        await session_service.create_session(
+    # #endregion
+
+    preview_text = request.message.strip()
+    preview = preview_text[:80] + "..." if len(preview_text) > 80 else preview_text
+
+    if session_id:
+        existing = await session_service.get_session(
             app_name=APP_NAME,
             user_id=user_id,
             session_id=session_id,
         )
+        if existing is None:
+            await session_service.create_session(
+                app_name=APP_NAME,
+                user_id=user_id,
+                session_id=session_id,
+                state={"_preview": preview},
+            )
+    else:
+        session_id = str(uuid.uuid4())
+        await session_service.create_session(
+            app_name=APP_NAME,
+            user_id=user_id,
+            session_id=session_id,
+            state={"_preview": preview},
+        )
+
+    # #region agent log
+    _debug_log(
+        "pre-fix",
+        "H1",
+        "backend/main.py:142",
+        "session ensured for chat stream",
+        {"session_id": session_id, "greenlet_available": _greenlet_available()},
+    )
+    # #endregion
+
+    yield f"data: {json.dumps({'type': 'session_info', 'session_id': session_id})}\n\n"
 
     user_message = Content(parts=[Part(text=request.message)])
 
@@ -130,17 +228,80 @@ async def chat(request: ChatRequest):
 
 # ── Session management ───────────────────────────────────────────────
 
-@app.post("/api/session/new")
-async def new_session(user_id: str = "default_user"):
+
+@app.post("/api/sessions")
+async def create_session(user_id: str = "default_user"):
     new_sid = str(uuid.uuid4())
-    _user_sessions.setdefault(user_id, {})["session_id"] = new_sid
     await session_service.create_session(
         app_name=APP_NAME, user_id=user_id, session_id=new_sid
     )
     return {"session_id": new_sid}
 
 
+@app.get("/api/sessions")
+async def list_sessions(user_id: str = "default_user"):
+    # #region agent log
+    _debug_log(
+        "pre-fix",
+        "H1",
+        "backend/main.py:212",
+        "list sessions entered",
+        {
+            "user_id": user_id,
+            "greenlet_available": _greenlet_available(),
+            "db_url": DB_URL,
+            "sqlalchemy_state": _sqlalchemy_greenlet_state(),
+        },
+    )
+    # #endregion
+
+    result = await session_service.list_sessions(
+        app_name=APP_NAME, user_id=user_id
+    )
+
+    # #region agent log
+    _debug_log(
+        "pre-fix",
+        "H3",
+        "backend/main.py:223",
+        "list sessions completed",
+        {"count": len(result.sessions), "greenlet_available": _greenlet_available()},
+    )
+    # #endregion
+
+    sessions_out = []
+    for s in result.sessions:
+        sessions_out.append(
+            {
+                "id": s.id,
+                "last_update_time": s.last_update_time,
+                "preview": _session_preview(s),
+            }
+        )
+    sessions_out.sort(key=lambda x: x["last_update_time"], reverse=True)
+    return {"sessions": sessions_out}
+
+
+@app.get("/api/sessions/{session_id}")
+async def get_session_messages(session_id: str, user_id: str = "default_user"):
+    session = await session_service.get_session(
+        app_name=APP_NAME, user_id=user_id, session_id=session_id
+    )
+    if session is None:
+        raise HTTPException(status_code=404, detail="Session not found")
+    return {"messages": _extract_messages_from_session(session)}
+
+
+@app.delete("/api/sessions/{session_id}")
+async def delete_session(session_id: str, user_id: str = "default_user"):
+    await session_service.delete_session(
+        app_name=APP_NAME, user_id=user_id, session_id=session_id
+    )
+    return {"status": "ok"}
+
+
 # ── Document corpus endpoints ────────────────────────────────────────
+
 
 @app.post("/api/corpus/upload")
 async def upload_document(file: UploadFile = File(...)):
@@ -168,6 +329,7 @@ async def delete_corpus_doc(doc_id: str):
 
 
 # ── Health ───────────────────────────────────────────────────────────
+
 
 @app.get("/api/health")
 async def health():

@@ -1,12 +1,35 @@
 import { FileText, MessageSquare } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import ChatView from "./components/ChatView";
 import DocumentUpload from "./components/DocumentUpload";
+import SessionSidebar from "./components/SessionSidebar";
 
 type Tab = "chat" | "documents";
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>("chat");
+  const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+  const [sidebarRefreshKey, setSidebarRefreshKey] = useState(0);
+
+  const refreshSidebar = useCallback(() => {
+    setSidebarRefreshKey((k) => k + 1);
+  }, []);
+
+  const handleNewSession = useCallback(() => {
+    setCurrentSessionId(null);
+  }, []);
+
+  const handleSelectSession = useCallback((sessionId: string) => {
+    setCurrentSessionId(sessionId);
+  }, []);
+
+  const handleSessionCreated = useCallback(
+    (sessionId: string) => {
+      setCurrentSessionId(sessionId);
+      refreshSidebar();
+    },
+    [refreshSidebar]
+  );
 
   return (
     <div className="h-screen flex flex-col">
@@ -45,10 +68,33 @@ function App() {
       </header>
 
       {/* Content */}
-      <main className="flex-1 overflow-hidden max-w-5xl w-full mx-auto">
-        {activeTab === "chat" && <ChatView />}
-        {activeTab === "documents" && <DocumentUpload />}
-      </main>
+      <div className="flex-1 flex overflow-hidden">
+        {activeTab === "chat" && (
+          <aside className="w-64 shrink-0">
+            <SessionSidebar
+              currentSessionId={currentSessionId}
+              onSelectSession={handleSelectSession}
+              onNewSession={handleNewSession}
+              refreshKey={sidebarRefreshKey}
+            />
+          </aside>
+        )}
+
+        <main
+          className={`flex-1 overflow-hidden ${
+            activeTab === "chat" ? "" : "max-w-5xl w-full mx-auto"
+          }`}
+        >
+          {activeTab === "chat" && (
+            <ChatView
+              sessionId={currentSessionId}
+              onSessionCreated={handleSessionCreated}
+              onMessageSent={refreshSidebar}
+            />
+          )}
+          {activeTab === "documents" && <DocumentUpload />}
+        </main>
+      </div>
     </div>
   );
 }
