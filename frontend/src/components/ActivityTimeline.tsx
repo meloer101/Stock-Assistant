@@ -1,4 +1,4 @@
-import { CheckCircle, Clock, Search, AlertTriangle } from "lucide-react";
+import { CheckCircle, Clock, AlertTriangle } from "lucide-react";
 
 export interface TimelineEvent {
   id: string;

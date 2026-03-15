@@ -1,7 +1,7 @@
 import { Send, RotateCcw, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { type ChatEvent, createNewSession, streamChat } from "../utils/api";
+import { createNewSession, streamChat } from "../utils/api";
 
 interface Message {
   id: string;

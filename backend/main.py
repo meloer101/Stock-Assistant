@@ -168,3 +168,12 @@ async def delete_corpus_doc(doc_id: str):
 @app.get("/api/health")
 async def health():
     return {"status": "ok", "app": APP_NAME}
+
+
+@app.get("/")
+async def root():
+    return {
+        "message": "Vine Investment Research API is running",
+        "docs": "/docs",
+        "health": "/api/health",
+    }
