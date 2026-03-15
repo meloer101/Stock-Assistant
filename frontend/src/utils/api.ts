@@ -4,6 +4,7 @@ export interface ChatEvent {
   author: string;
   type: "progress" | "final" | "error";
   text?: string;
+  partial?: boolean;
   state_update?: Record<string, string>;
 }
 

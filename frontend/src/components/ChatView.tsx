@@ -47,14 +47,27 @@ export default function ChatView() {
       let accumulated = "";
       for await (const event of streamChat(text)) {
         if (event.text) {
-          accumulated += event.text + "\n";
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantId
-                ? { ...m, content: accumulated, author: event.author }
-                : m
-            )
-          );
+          if (event.partial) {
+            accumulated += event.text;
+            setMessages((prev) =>
+              prev.map((m) =>
+                m.id === assistantId
+                  ? { ...m, content: accumulated, author: event.author }
+                  : m
+              )
+            );
+          } else {
+            if (!accumulated) {
+              accumulated = event.text;
+              setMessages((prev) =>
+                prev.map((m) =>
+                  m.id === assistantId
+                    ? { ...m, content: event.text!, author: event.author }
+                    : m
+                )
+              );
+            }
+          }
         }
       }
       setMessages((prev) =>

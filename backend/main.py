@@ -9,6 +9,7 @@ from typing import Any
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
+from google.adk.agents.run_config import RunConfig, StreamingMode
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai.types import Content, Part
@@ -77,14 +78,17 @@ async def _run_agent_stream(request: ChatRequest):
     user_message = Content(parts=[Part(text=request.message)])
 
     try:
+        run_config = RunConfig(streaming_mode=StreamingMode.SSE)
         async for event in runner.run_async(
             user_id=user_id,
             session_id=session_id,
             new_message=user_message,
+            run_config=run_config,
         ):
             event_data: dict[str, Any] = {
                 "author": event.author or "system",
                 "type": "progress",
+                "partial": bool(event.partial),
             }
 
             if event.content and event.content.parts:
