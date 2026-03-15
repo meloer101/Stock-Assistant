@@ -78,7 +78,7 @@ async def _run_agent_stream(request: ChatRequest):
     user_message = Content(parts=[Part(text=request.message)])
 
     try:
-        run_config = RunConfig(streaming_mode=StreamingMode.SSE)
+        run_config = RunConfig(streaming_mode=StreamingMode.SSE, max_llm_calls=30)
         async for event in runner.run_async(
             user_id=user_id,
             session_id=session_id,

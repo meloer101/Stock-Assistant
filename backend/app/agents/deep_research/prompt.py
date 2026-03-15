@@ -38,7 +38,9 @@ Use the `tavily_search` tool to find relevant, high-quality information.
 For each search result, note the source URL for citation.
 
 **Requirements:**
-- Perform multiple targeted searches to cover the topic thoroughly.
+- Perform at most 2 targeted searches to cover the topic efficiently.
+- Prioritize breadth: each search query should cover a distinct aspect.
+- Do NOT repeat similar queries or search for the same information twice.
 - Focus on recent, authoritative sources.
 - Record key facts, data points, and quotes with their sources.
 - Structure your findings clearly with headers and bullet points.
@@ -66,8 +68,10 @@ is sufficient to write a comprehensive report section.
     "follow_up_queries": ["specific search query 1", "specific search query 2"]
 }}
 
-Set grade to "pass" if the research is sufficient for a quality report.
-Set grade to "fail" if significant gaps remain, and provide follow_up_queries.
+Set grade to "pass" if the research covers the main aspects of the plan with
+reasonable depth. Minor gaps are acceptable -- perfection is not required.
+Set grade to "fail" ONLY if critical information is completely missing,
+and provide follow_up_queries to address the specific gaps.
 """
 
 COMPOSER_PROMPT = """You are a report composer. Create a comprehensive, well-structured research report

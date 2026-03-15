@@ -9,7 +9,22 @@ interface Message {
   content: string;
   author?: string;
   isStreaming?: boolean;
+  statusHint?: string;
 }
+
+const agentLabels: Record<string, string> = {
+  vine_root_agent: "Routing your request...",
+  interactive_planner: "Creating research plan...",
+  section_researcher: "Searching the web...",
+  research_critic: "Evaluating research quality...",
+  report_composer: "Writing final report...",
+  quick_answer_agent: "Looking up information...",
+  stock_coordinator: "Analyzing stock...",
+  data_analyst_agent: "Gathering market data...",
+  strategy_analyst_agent: "Developing strategies...",
+  risk_analyst_agent: "Evaluating risks...",
+  doc_qa_agent: "Searching documents...",
+};
 
 export default function ChatView() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -45,7 +60,18 @@ export default function ChatView() {
 
     try {
       let accumulated = "";
+      let lastAuthor = "";
       for await (const event of streamChat(text)) {
+        if (event.author && event.author !== lastAuthor) {
+          lastAuthor = event.author;
+          const hint = agentLabels[event.author] || event.author;
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId ? { ...m, statusHint: hint } : m
+            )
+          );
+        }
+
         if (event.text) {
           if (event.partial) {
             accumulated += event.text;
@@ -72,7 +98,9 @@ export default function ChatView() {
       }
       setMessages((prev) =>
         prev.map((m) =>
-          m.id === assistantId ? { ...m, isStreaming: false } : m
+          m.id === assistantId
+            ? { ...m, isStreaming: false, statusHint: undefined }
+            : m
         )
       );
     } catch (err) {
@@ -158,7 +186,14 @@ export default function ChatView() {
                 <ReactMarkdown>{msg.content}</ReactMarkdown>
               </div>
               {msg.isStreaming && (
-                <Loader2 className="w-4 h-4 animate-spin mt-2 text-[var(--accent)]" />
+                <div className="flex items-center gap-2 mt-2">
+                  <Loader2 className="w-4 h-4 animate-spin text-[var(--accent)]" />
+                  {msg.statusHint && (
+                    <span className="text-xs text-[var(--text-secondary)]">
+                      {msg.statusHint}
+                    </span>
+                  )}
+                </div>
               )}
             </div>
           </div>

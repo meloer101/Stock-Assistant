@@ -21,7 +21,7 @@ def get_llm() -> LiteLlm:
 class ResearchConfig:
     worker_model: LiteLlm = field(default_factory=get_llm)
     critic_model: LiteLlm = field(default_factory=get_llm)
-    max_search_iterations: int = 5
+    max_search_iterations: int = 2
     chroma_db_path: str = "./chroma_db"
     chroma_collection_name: str = "investment_docs"
     embedding_model_name: str = "all-MiniLM-L6-v2"
