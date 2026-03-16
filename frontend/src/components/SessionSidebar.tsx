@@ -72,7 +72,7 @@ export default function SessionSidebar({
       <div className="p-3">
         <button
           onClick={onNewSession}
-          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-[var(--accent)] text-[var(--bg-primary)] hover:bg-[var(--accent-hover)] transition-colors text-sm font-medium"
+          className="w-full flex items-center justify-center gap-2 px-3 py-2.5 rounded-lg bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] transition-colors text-sm font-medium shadow-sm"
         >
           <MessageSquarePlus className="w-4 h-4" />
           New Chat

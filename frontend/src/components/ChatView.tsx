@@ -230,7 +230,7 @@ export default function ChatView({
                   <button
                     key={q}
                     onClick={() => setInput(q)}
-                    className="px-3 py-1.5 rounded-lg bg-[var(--bg-tertiary)] text-sm hover:bg-[var(--accent)] hover:text-[var(--bg-primary)] transition-colors"
+                    className="px-3 py-1.5 rounded-lg bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)] text-sm hover:bg-[var(--accent)] hover:text-white hover:border-[var(--accent)] transition-colors shadow-sm"
                   >
                     {q}
                   </button>
@@ -246,9 +246,9 @@ export default function ChatView({
             className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
           >
             <div
-              className={`max-w-[80%] rounded-2xl px-4 py-3 ${
+              className={`max-w-[80%] rounded-2xl px-4 py-3 shadow-sm ${
                 msg.role === "user"
-                  ? "bg-[var(--accent)] text-[var(--bg-primary)]"
+                  ? "bg-[var(--accent)] text-white"
                   : "bg-[var(--bg-secondary)] border border-[var(--bg-tertiary)]"
               }`}
             >
@@ -291,7 +291,7 @@ export default function ChatView({
           <button
             onClick={handleSend}
             disabled={isLoading || !input.trim()}
-            className="p-2.5 rounded-xl bg-[var(--accent)] text-[var(--bg-primary)] hover:bg-[var(--accent-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="p-2.5 rounded-xl bg-[var(--accent)] text-white hover:bg-[var(--accent-hover)] disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-sm"
           >
             {isLoading ? (
               <Loader2 className="w-5 h-5 animate-spin" />

@@ -3,13 +3,14 @@
 @tailwind utilities;
 
 :root {
-  --bg-primary: #0f172a;
-  --bg-secondary: #1e293b;
-  --bg-tertiary: #334155;
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --accent: #38bdf8;
-  --accent-hover: #7dd3fc;
+  /* Landing Page Theme: Warm White & Terracotta */
+  --bg-primary: #F9F8F6;       /* Main background (warm white) */
+  --bg-secondary: #FFFFFF;     /* Component background (white) */
+  --bg-tertiary: #E5E5E5;      /* Borders/Dividers (light gray) */
+  --text-primary: #1A1A1A;     /* Primary text (dark gray) */
+  --text-secondary: #666666;   /* Secondary text (medium gray) */
+  --accent: #E85D35;           /* Primary Brand Color (Terracotta) */
+  --accent-hover: #D44C25;     /* Darker shade for hover states */
   --success: #4ade80;
   --warning: #fbbf24;
   --error: #f87171;
@@ -26,9 +27,12 @@ body {
   width: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--bg-tertiary);
+  background: #d4d4d4;
   border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #a3a3a3;
 }
