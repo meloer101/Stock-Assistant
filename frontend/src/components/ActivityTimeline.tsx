@@ -26,6 +26,7 @@ const agentLabels: Record<string, string> = {
   section_researcher: "Web Research",
   research_critic: "Quality Review",
   report_composer: "Report Writing",
+  theme_research_agent: "Theme Research",
   doc_qa_agent: "Document Q&A",
 };
 

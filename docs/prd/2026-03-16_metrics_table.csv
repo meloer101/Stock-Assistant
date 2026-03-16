@@ -1,0 +1,11 @@
+metric,definition,target,data_source
+Theme research adoption rate,Percent of sessions that trigger theme_research_agent within 30 days,>=25%,Backend SSE author logs / session events
+Citation coverage (titles-only),Percent of key claims with at least one title citation,>=95%,Eval cases human review + automated heuristic checks
+Theme research completion rate,Percent of theme research responses passing Structure Checks,>=80%,`docs/discovery/2026-03-16_eval_cases_v0.md` review results
+Time-to-first-token (TTFT),Time from user send to first streamed token,p95 <= 10s,Frontend stream telemetry
+End-to-end time (theme),Time from user send to final response,p95 <= 300s,Backend timestamps + frontend
+User trust rating,Post-response 1–5 trust score for theme research,>=4.0,In-product feedback (TBD)
+Follow-up reduction,Avg number of user follow-up questions for “where did this come from?”,-30% vs baseline,Conversation analytics (TBD)
+Doc QA citation correctness,Percent of doc QA statements with correct [Source: filename, Page X],>=95%,Spot checks + eval set (TBD)
+Session deletion success,Percent of delete session actions that remove session from UI immediately,>=99%,Frontend telemetry + backend
+

@@ -19,6 +19,7 @@ const agentLabels: Record<string, string> = {
   research_critic: "Evaluating research quality...",
   report_composer: "Writing final report...",
   quick_answer_agent: "Looking up information...",
+  theme_research_agent: "Researching theme...",
   stock_coordinator: "Analyzing stock...",
   data_analyst_agent: "Gathering market data...",
   strategy_analyst_agent: "Developing strategies...",
